@@ -1,0 +1,125 @@
+﻿<Window x:Class="ActionVisualizer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Action Visualizer" Height="350" Width="725
+        " ResizeMode="NoResize">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="5*" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Canvas Height="auto" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" Name="_barcanvas" VerticalAlignment="stretch" Width="auto" >
+        <Line
+            X1="0" Y1="130"
+            X2="525" Y2="130"
+            Stroke="White"
+            StrokeThickness="2" />
+            <TextBlock Canvas.Left="182" Canvas.Bottom="0" Height="15" Name="textBox1" Width="70" Text="Channel" FontSize="12" Foreground="White"/>
+            <TextBlock Canvas.Left="0" Canvas.Top="63" Height="24" Name="textBox2" Width="63" Text="Velocity +" FontSize="12" Foreground="White">
+                <TextBlock.RenderTransform>
+                        <RotateTransform Angle="270" />
+                    </TextBlock.RenderTransform>
+            </TextBlock>
+            <TextBlock Canvas.Left="0" Canvas.Top="260" Height="24" Name="textBox3" Width="63" Text="- Velocity" FontSize="12" Foreground="White">
+                <TextBlock.RenderTransform>
+                        <RotateTransform Angle="270" />
+                    </TextBlock.RenderTransform>
+            </TextBlock>
+        </Canvas>
+        <InkCanvas
+            Name='_ink'
+            Background='White'
+            Height="auto" Grid.Row="0" Grid.Column="3" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="stretch" Width="auto" />
+        
+        <Viewport3D Name='_viewport' Visibility="Hidden"
+            Height="auto" Grid.Row="0" Grid.Column="3" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="stretch" Width="auto" >
+            <Viewport3D.Camera>
+                <PerspectiveCamera
+                    Position="0,0,30"
+                  LookDirection="0,0,-20"
+                  UpDirection="0,1,0"
+                  FieldOfView="100"
+                  />
+            </Viewport3D.Camera>
+            <Viewport3D.Children>
+                <ModelVisual3D>
+                    <ModelVisual3D.Content>
+                        <Model3DGroup >
+                            <AmbientLight Color="Yellow"/>
+                        </Model3DGroup >
+                    </ModelVisual3D.Content>
+                </ModelVisual3D>
+            </Viewport3D.Children>
+        </Viewport3D>
+
+        <TextBlock Text="Channel Count" Grid.Column="0" Grid.Row="1" Height="23" HorizontalAlignment="Center" VerticalAlignment="Top" Width="80" />
+        <ComboBox Name="channelSelector" IsEditable="True" IsReadOnly="True" Text="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" Grid.Row="2" Grid.Column="0" SelectionChanged="channelSelector_SelectionChanged">
+            <ComboBoxItem Content="1"/>
+            <ComboBoxItem Content="2"/>
+            <ComboBoxItem Content="3"/>
+            <ComboBoxItem Content="4"/>
+            <ComboBoxItem Content="5"/>
+            <ComboBoxItem Content="6"/>
+            <ComboBoxItem Content="7"/>
+            <ComboBoxItem Content="8"/>
+        </ComboBox>
+        <Button Content="Start Sound" Grid.Column="1" Grid.Row="1" Height="23" HorizontalAlignment="Center" Name="button1" VerticalAlignment="Center" Width="75" Click="button1_Click" />
+        <TextBlock FontSize="20" Grid.Column="2" Grid.ColumnSpan="2" Grid.Row="1" Height="50" TextAlignment="Center" HorizontalAlignment="Center" Name="gestureDetected" VerticalAlignment="Center" Width="150" />
+        <TextBlock Visibility="Hidden" Grid.Column="2" Grid.Row="1" Height="23" HorizontalAlignment="Center" Name="complexGestureDetected" VerticalAlignment="Bottom" Width="120" />
+        <CheckBox  Visibility="Hidden" Grid.Column="2" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Top" Name="useRubine" Content="Use Rubine?" IsChecked="False"></CheckBox>
+        <CheckBox  Grid.Column="4" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Top" Name="use3DGestures" Content="3D Mode?" IsChecked="False" Unchecked="use3DGestures_Unchecked" Checked="use3DGestures_Checked"></CheckBox>
+        <CheckBox  Grid.Column="4" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Name="detectMode" Content="Detect" IsChecked="False" Unchecked="use3DGestures_Unchecked" Checked="use3DGestures_Checked"></CheckBox>
+        <ComboBox Name="gestureSelector" Visibility="Visible" IsEditable="True" IsReadOnly="True" Text="swipe_left" HorizontalAlignment="Stretch" VerticalAlignment="Center" Grid.Row="2" Grid.Column="4">
+            <ComboBoxItem Content="swipe_left"/>
+            <ComboBoxItem Content="swipe_right"/>
+            <ComboBoxItem Content="swipe_up"/>
+            <ComboBoxItem Content="swipe_down"/>
+            <ComboBoxItem Content="tap_left"/>
+            <ComboBoxItem Content="tap_right"/>
+            <ComboBoxItem Content="tap_up"/>
+            <ComboBoxItem Content="tap_down"/>
+            <ComboBoxItem Content="scratchout"/>
+            <ComboBoxItem Content="circle"/>
+            <ComboBoxItem Content="square"/>
+            <ComboBoxItem Content="x"/>
+            <ComboBoxItem Content="L"/>
+            <!--ComboBoxItem Content="c"/>
+            <ComboBoxItem Content="two_handed_fb"/>
+            <ComboBoxItem Content="two_handed_lr"-->
+            <ComboBoxItem Content="detect"/>
+        </ComboBox>
+        <ComboBox HorizontalAlignment="Right" Visibility="Hidden" IsEditable="True" IsReadOnly="True" Name="handSelector" Text="right" VerticalAlignment="Center" Grid.Column="5" Grid.Row="1" Margin="0,15" Width="117">
+            <ComboBoxItem Content="right" />
+            <ComboBoxItem Content="left" />
+        </ComboBox>
+        
+        <TextBlock Text="Frame Window" Grid.Column="6" Grid.Row="1" Height="23" HorizontalAlignment="Center" VerticalAlignment="Top" Width="80" />
+        <ComboBox HorizontalAlignment="Center" IsEditable="True" IsReadOnly="True" Name="frameWindow" Text="6" VerticalAlignment="Top" SelectedIndex="6" Grid.Column="5" Grid.Row="1" Margin="0,15" Width="117">
+            <ComboBoxItem Content="0" />
+            <ComboBoxItem Content="1" />
+            <ComboBoxItem Content="2" />
+            <ComboBoxItem Content="3" />
+            <ComboBoxItem Content="4" />
+            <ComboBoxItem Content="5" />
+            <ComboBoxItem Content="6" />
+            <ComboBoxItem Content="7" />
+            <ComboBoxItem Content="8" />
+            <ComboBoxItem Content="9" />
+            <ComboBoxItem Content="10" />
+            <ComboBoxItem Content="11" />
+            <ComboBoxItem Content="12" />
+        </ComboBox>
+        
+        <Canvas Visibility ="Hidden" Grid.Column="3" Grid.ColumnSpan="1" Grid.Row="1" HorizontalAlignment="Stretch" Name="colorBox" VerticalAlignment="Stretch" Background="Red"/>
+    </Grid>
+</Window>
+
+    
