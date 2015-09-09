@@ -69,3 +69,6 @@ packages/
 
 #Mp3 files
 *.mp3
+
+*.7z
+*.zip
