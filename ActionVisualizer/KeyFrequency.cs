@@ -157,68 +157,9 @@ namespace ActionVisualizer
             return sto;
         }
 
-        //Heuristics classification
-        /*public int classify()
-        {
-            double thresh = .5;
-            bool towards = false;
-            bool away = false;
-            int velocityT = 0;
-            int velocityA = 0;
-            for (int i = 4; i < radius; i++)
-            {
-                if (data[radius - i] > thresh)
-                {
-                    velocityA = i - 3;
-                    away = true;
-                }
-                if (data[radius + i] > thresh)
-                {
-                    velocityT = i - 3;
-                    towards = true;
-                }
-            }
-            if ((towards == true) && (away == true))
-            {
-                isBoth = true;
-                if (velocityA > velocityT)
-                {
-                    inverse_state = velocityT;
-                    updateXY(-1*velocityA);
-                    return -1 * velocityA;
-                }
-                else
-                {
-                    inverse_state = velocityA;
-                    updateXY(velocityT);
-                    return velocityT;
-                }
-            }
-            if (towards)
-            {
-                updateXY(velocityT);
-                return velocityT;
-            }
-            if (away)
-            {
-                updateXY(-1*velocityA);
-                return -1 * velocityA;
-            }
-            return 0;
-        }*/
         public int classify()
         {
             double thresh = .1;
-            double second_peak_thresh = .3;
-
-            double peakA = 1.0;
-            double peakT = 1.0;
-
-            bool aDropped = true;
-            bool tDropped = true;
-
-            bool aSecondPeak = false;
-            bool tSecondPeak = false;
 
             bool towards = false;
             bool away = false;

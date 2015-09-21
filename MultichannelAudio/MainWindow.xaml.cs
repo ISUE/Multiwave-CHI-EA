@@ -1,23 +1,14 @@
-﻿using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using NAudio;
-using NAudio.Wave;
-using NAudio.Dsp;
-using Exocortex.DSP;
+﻿using Exocortex.DSP;
 using Microsoft.Research.DynamicDataDisplay;
 using Microsoft.Research.DynamicDataDisplay.DataSources;
+using NAudio.Dsp;
+using NAudio.Wave;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace MultichannelAudio
 {
@@ -25,9 +16,8 @@ namespace MultichannelAudio
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
-    {
-        //private WaveOut waveOut;
-        private AsioOut asioOut;
+    {        
+        private WaveOut waveOut;
         private WaveIn waveIn;
 
         public int waveOutChannels;        
@@ -48,22 +38,15 @@ namespace MultichannelAudio
 
         int[] channelLabel;
         int[] velocity;
-        Rectangle[] bars;
-        
-        //EnumerableDataSource<int> channelSource;
-        //EnumerableDataSource<int> velocitySource;
+           
 
         int selectedChannels = 1;
         List<int> frequencies;
         List<int> centerbins;
 
         List<KeyFrequency> KF;
-
-        StreamWriter svmOutStream = null;
-        //List<StreamWriter> Foutstream;
-
-        private bool graphing = true;
-        private bool recording = false;        
+  
+        private bool graphing = true;        
 
         public MainWindow()
         {         
@@ -76,9 +59,7 @@ namespace MultichannelAudio
                 Console.WriteLine("Device {0}: {1}, {2} channels",
                     waveInDevice, deviceInfo.ProductName, deviceInfo.Channels);           
             }
-
-            this.gestureSelector.SelectedIndex = 0;
-
+            
             waveIn = new WaveIn();
             waveIn.BufferMilliseconds = 47*buffersize/2048;
             waveIn.DeviceNumber = 0;
@@ -102,8 +83,6 @@ namespace MultichannelAudio
             channelLabel[0] = 1;
             velocity = new int[1];
             velocity[0] = 0;
-            bars = new Rectangle[1];
-            bars[0] = createBar(channelLabel[0], selectedChannels, velocity[0], 33);
             for (int i = 0; i < buffersize * 2; i++)
             {
                 bin[i] = i;
@@ -112,13 +91,9 @@ namespace MultichannelAudio
                 
             }
 
-            chart1.Viewport.Visible = new DataRect(0, -1.0, buffersize * 2, 2.0);
-            
-            //chart2.Viewport.Visible = new DataRect(1620, -50, 280,110);
+            chart1.Viewport.Visible = new DataRect(0, -1.0, buffersize * 2, 2.0);            
             chart2.Viewport.Visible = new DataRect(1620, 0, 280, 110);   
-                     
-            //chart3.Viewport.Visible = new DataRect(1, -30, 1, 60);
-            
+                                 
             bins = new EnumerableDataSource<int>(bin);
             bins.SetXMapping(x => x);
 
@@ -130,19 +105,10 @@ namespace MultichannelAudio
 
             CompositeDataSource comp2 = new CompositeDataSource(bins, rawIn);
             chart2.AddLineGraph(comp2);
-
-            //channelSource = new EnumerableDataSource<int>(channelLabel);
-            //channelSource.SetXMapping(x => x);
-            //velocitySource = new EnumerableDataSource<int>(velocity);
-            //velocitySource.SetYMapping(y => y);
-            //CompositeDataSource comp3 = new CompositeDataSource(channelSource, velocitySource);
-            //chart3.AddLineGraph(comp3);
-            _barcanvas.Background = new SolidColorBrush(Colors.LightBlue);
         }
 
         void waveIn_DataAvailable(object sender, WaveInEventArgs e)
-        {
-            //Console.WriteLine(e.BytesRecorded); //8288 bytes -> 2072 floats (24 too many)
+        {            
             if (init_inbetween)
             {
                 inbetween = new float[e.BytesRecorded / 4 - buffersize];
@@ -180,10 +146,7 @@ namespace MultichannelAudio
                 float sample32 = sample / 2147483648f;
                 inbetween[i - buffersize] = sample32;
             }           
-            /*
-            for (int i = 0; i < 4096; ++i)
-                sampledata[i] = 0.01*(float)Math.Sin(2 * Math.PI * i * 19000 / 44100f);
-            */
+
             bufferFFT();
             if (graphing)
             {
@@ -196,63 +159,24 @@ namespace MultichannelAudio
                 CompositeDataSource comp1 = new CompositeDataSource(bins, rawIn);
                 chart1.AddLineGraph(comp1, Colors.Red);
 
-                //fftIn = new EnumerableDataSource<Complex>(indata);
-                //fftIn.SetYMapping(y => Math.Sqrt(y.X*y.X + y.Y*y.Y));                
-                //fftIn.SetYMapping(y => Math.Sqrt(y.Re * y.Re + y.Im * y.Im));
-
                 fftIn = new EnumerableDataSource<double>(filteredindata);
                 fftIn.SetYMapping(y => y);
-
-                //fftIn = new EnumerableDataSource<ComplexF>(indata);
-                //fftIn.SetYMapping(y => mag2db(y));
-
 
                 chart2.Children.RemoveAll<LineGraph>();
                 CompositeDataSource comp2 = new CompositeDataSource(bins, fftIn);
                 chart2.AddLineGraph(comp2, Colors.Red);
             }
 
-            if ((asioOut != null) && recording)
-            {
-                //for (int i = 0; i < frequencies.Count; i++)
-                //{
-                //    if (Foutstream.Count < i+1)
-                //    {
-                //        Foutstream.Add(new StreamWriter(filenameBox.Text + i.ToString() + ".dat"));
-                //        Console.WriteLine(filenameBox.Text + i.ToString() + ".dat");
-                //    }
-                //}
-
-                //channelSource = new EnumerableDataSource<int>(channelLabel);
-
-                _barcanvas.Children.Clear();
-
-                if(svmOutStream == null)
-                    svmOutStream = new StreamWriter("test.ds");
-
-                KF = new List<KeyFrequency>();
-                gestureDetected.Text = "";
+            if ((waveOut != null) )
+            {         
+                
+                KF = new List<KeyFrequency>();                
                 for (int i = 0; i < frequencies.Count; i++)
                 {                    
-                    KF.Add(new KeyFrequency(frequencies.ElementAt(i), i + 1, 33, filteredindata, centerbins.ElementAt(i)));
-                    //Foutstream.ElementAt(i).WriteLine(KF.ElementAt(i));
-                    svmOutStream.WriteLine(gestureSelector.SelectedIndex + " " + KF.ElementAt(i));
+                    KF.Add(new KeyFrequency(frequencies.ElementAt(i), i + 1, 33, filteredindata, centerbins.ElementAt(i)));                    
                     velocity[i] = KF.ElementAt(i).state;
-                    //Console.WriteLine(velocity[i]);
-                    gestureDetected.Text += " " + KF.ElementAt(i).state.ToString();
-                    bars[i] = createBar(channelLabel[i], selectedChannels, velocity[i], 33);
-                    _barcanvas.Children.Add(bars[i]);
+
                 }
-
-                //chart3.Children.RemoveAll<LineGraph>();
-
-                //channelSource = new EnumerableDataSource<int>(channelLabel);
-                //channelSource.SetXMapping(x => x);
-                //velocitySource = new EnumerableDataSource<int>(velocity);
-                //velocitySource.SetYMapping(y => y);
-                //CompositeDataSource comp3 = new CompositeDataSource(channelSource, velocitySource);
-                //chart3.AddLineGraph(comp3, Colors.Red);       
-
 
             }
 
@@ -275,30 +199,11 @@ namespace MultichannelAudio
         private void button1_Click(object sender, EventArgs e)
         {
             StartStopSineWave();
-        }
-
-        private void record_Click(object sender, EventArgs e)
-        {
-            if (recording)
-            {
-                recording = false;
-                //for (int i = 0; i < Foutstream.Count; i++)
-                //{                   
-                //    Foutstream.ElementAt(i).Close();                    
-                //}                
-                button2.Content = "Record";
-            }
-            else
-            {
-                recording = true;
-                button2.Content = "Stop";
-            }
-        }
-
+        }     
 
         private void StartStopSineWave()
         {
-            if (asioOut == null)
+            if (waveOut == null)
             {
                 button1.Content = "Stop Sound";
                 //string str = channelSelector.Text;
@@ -306,7 +211,7 @@ namespace MultichannelAudio
                 Console.WriteLine("User Selected Channels: " + selectedChannels);
                 WaveOutCapabilities outdeviceInfo = WaveOut.GetCapabilities(0);                
                 waveOutChannels = outdeviceInfo.Channels;
-                asioOut = new AsioOut(0);
+                waveOut = new WaveOut();
                 int waveOutDevices = WaveOut.DeviceCount;
                 for(int i = 0; i< waveOutDevices; i++)
                 {
@@ -315,20 +220,6 @@ namespace MultichannelAudio
                             i, outdeviceInfo.ProductName, outdeviceInfo.Channels);
                 }
 
-                /*
-                var sineWaveProvider = new SineWaveProvider32();
-                sineWaveProvider.SetWaveFormat(44100, 1); // 44.1kHz mono
-                sineWaveProvider.Frequency = 19000;
-                sineWaveProvider.Amplitude = 0.25f;
-                var sineWaveProvider2 = new SineWaveProvider32();
-                sineWaveProvider2.SetWaveFormat(44100, 1); // 44.1kHz mono
-                sineWaveProvider2.Frequency = 18000;
-                sineWaveProvider2.Amplitude = 0.25f;
-                
-                List<IWaveProvider> inputs = new List<IWaveProvider>();
-                inputs.Add(sineWaveProvider);
-                inputs.Add(sineWaveProvider2);
-                */
 
                 List<IWaveProvider> inputs = new List<IWaveProvider>();
                 frequencies = new List<int>();
@@ -346,25 +237,19 @@ namespace MultichannelAudio
                 var splitter = new MultiplexingWaveProvider(inputs, selectedChannels);
                 try
                 {
-                    asioOut.Init(splitter);
-                    asioOut.Play();
+                    waveOut.Init(splitter);
+                    waveOut.Play();
                 }
                 catch(System.ArgumentException)
                 {
                     Console.WriteLine("Invalid audio channel count. Please select a lower number of audio channels");
-                }
-                //waveOut = new WaveOut();
-                //waveOut.Init(sineWaveProvider);                    
-                //waveOut.Init(splitter);
-                
-                Console.WriteLine("Number of Channels: " + asioOut.NumberOfOutputChannels);
-                Console.WriteLine("Playback Latency: " + asioOut.PlaybackLatency);                
+                }           
             }
             else
             {
-                asioOut.Stop();
-                asioOut.Dispose();
-                asioOut = null;
+                waveOut.Stop();
+                waveOut.Dispose();
+                waveOut = null;
                 button1.Content = "Generate Sound";
 
                 frequencies.Clear();
@@ -382,149 +267,33 @@ namespace MultichannelAudio
         {
             double[] outdata = new double[data.Length];
             double min = Double.PositiveInfinity;
-            double mean = 0;
+            
             for (int i = 0; i < data.Length; i++)
             {
                 outdata[i] = mag2db(data[i]);
                 min = Math.Min(outdata[i], min);
             }
-            /*
-            for (int i = 0; i < data.Length; i++)
-            {
-                outdata[i] -= min;
-                mean += (outdata[i]);
-            }
-            mean /= data.Length;
-            for (int i = 0; i < data.Length; i++)
-                if (outdata[i] < (mean * factor))
-                    outdata[i] = 0;
 
-            for (int i = 0; i < data.Length; i++)
-            {
-                if ((i > 0) && (i < (data.Length - 1)))
-                {
-                    if ((outdata[i] > 0) && (priori[i] == 0) && (outdata[i - 1] == 0) && (outdata[i + 1] == 0))
-                    {
-                        outdata[i] = 0;
-                    }
-                }
-                priori[i] = outdata[i];
-            }*/
-            //Console.WriteLine("Mean: " + mean + " Min: " + min);
-            return outdata;
-        }
-
-        public double[] filterMovingAverage(ComplexF[] input, int width)
-        {
-            double[] outdata = new double[input.Length];
-            if (width == 1)
-                for (int i = 0; i < input.Length; i++)
-                    outdata[i] = mag2db(input[i]);
-                
-            if (width == 3)
-                for (int i = 1; i < input.Length - 1; i++)            
-                    outdata[i] = (mag2db(input[i - 1]) + mag2db(input[i]) + mag2db(input[i + 1])) / 3;
-            
-            if (width == 5)
-                for (int i = 2; i < input.Length - 2; i++)            
-                    outdata[i] = (mag2db(input[i - 2]) + mag2db(input[i - 1]) + mag2db(input[i]) + mag2db(input[i + 1]) + mag2db(input[i + 2])) / 5;
-            
-            return outdata;
-        }
-
-        public double[] filterHighPass(ComplexF[] input)
-        {
-            double[] outdata = new double[input.Length];
-            outdata[0] = mag2db(input[0]);
-            for (int i = 1; i < input.Length; i++)
-            {
-                outdata[i] = mag2db(input[i]) - mag2db(input[i - 1]);
-            }
-            return outdata;
-        }
-
-        public double[] filterGaussian(ComplexF[] input, int sigma)
-        {
-            double[] outdata = new double[input.Length];
-            double[] converted = new double[input.Length];
-            for (int i = 0; i < input.Length; i++)
-            {
-                converted[i] = mag2db(input[i]);
-                outdata[i] = mag2db(input[i]);
-            }
-
-            double constant = 1 / (Math.Sqrt(2 * Math.PI) * sigma);
-            double[] window = new double[1 + 2 * sigma];
-            for (int i = 0; i < window.Length; i++)
-            {
-                window[i] = constant * Math.Exp(-1 * Math.Pow(i - sigma, 2) / 2 * Math.Pow(sigma, 2));
-            }
-            for (int i = sigma; i < input.Length - sigma; i++)
-            {
-                outdata[i] = 0;
-                for (int j = -sigma; j <= sigma; j++)
-                {
-                    outdata[i] += outdata[i + j] * window[j + sigma];
-                }
-            }
             return outdata;
         }
 
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);
-            if (svmOutStream != null)
-            {
-                svmOutStream.Close();
-                svmOutStream.Dispose();
-            }
         }
         
         private void channelSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            selectedChannels = (sender as ComboBox).SelectedIndex + 1;
-            //selectedChannels = Int32.Parse(str);
+            selectedChannels = (sender as ComboBox).SelectedIndex + 1;            
             channelLabel = new int[selectedChannels];
             velocity = new int[selectedChannels];
-            bars = new Rectangle[selectedChannels];
-            //chart3.Viewport.Visible = new DataRect(1, -30, selectedChannels, 60);
-
-            //channelSource = new EnumerableDataSource<int>(channelLabel);
-            //channelSource.SetXMapping(x => x);
 
             for (int i = 0; i < selectedChannels; i++)
             {
                 channelLabel[i] = i + 1;
                 velocity[i] = 0;
-                bars[i] = createBar(i+1, selectedChannels, 0, 33);
             }
 
-        }
-
-        private Rectangle createBar(int channel, int cmax, int velocity, int vmax)
-        {
-            Rectangle outRect = new Rectangle();
-            outRect.Width = _barcanvas.ActualWidth / cmax;
-            outRect.Height = (_barcanvas.ActualHeight*Math.Abs(velocity))/(2*vmax);
-
-            Canvas.SetLeft(outRect,(outRect.Width*(channel-1)));
-
-            if (velocity < 0)
-            {
-                Canvas.SetTop(outRect, _barcanvas.ActualHeight / 2);
-                outRect.Stroke = new SolidColorBrush(Colors.Black);
-                outRect.Fill = new SolidColorBrush(Colors.Red);
-            }
-            else
-            {
-                Canvas.SetTop(outRect, (_barcanvas.ActualHeight / 2)-((_barcanvas.ActualHeight * Math.Abs(velocity)) / (2 * vmax)));
-                outRect.Stroke = new SolidColorBrush(Colors.Black);
-                outRect.Fill = new SolidColorBrush(Colors.Green);
-            }
-
-            Console.WriteLine(outRect.Width + " " + outRect.Height);
-            return outRect;
-        }
-
+        }  
     }
 }

@@ -4,7 +4,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:d3="http://research.microsoft.com/DynamicDataDisplay/1.0" mc:Ignorable="d" d:DesignWidth="327" SizeToContent="WidthAndHeight" Title="Multichannel Audio">
-    
+
     <Grid Background="White">
         <Grid.RowDefinitions>
             <RowDefinition Height="4*" />
@@ -15,18 +15,16 @@
             <ColumnDefinition Width="1*"/>
             <ColumnDefinition Width="1*"/>
             <ColumnDefinition Width="1*"/>
-            <ColumnDefinition Width="1*"/>
-            <ColumnDefinition Width="1*"/>
         </Grid.ColumnDefinitions>
         <d3:ChartPlotter Name="chart1" Margin="12,12,12,12" Grid.Row="0" Grid.ColumnSpan="3">
             <d3:HorizontalAxis>
-                <d3:HorizontalIntegerAxis Name="dataAxis"/>                                    
+                <d3:HorizontalIntegerAxis Name="dataAxis"/>
             </d3:HorizontalAxis>
             <d3:VerticalAxis>
                 <d3:VerticalAxis Name="amplitudeAxis"/>
             </d3:VerticalAxis>
             <d3:Header FontFamily="Arial" Content="Raw Input"/>
-            <d3:VerticalAxisTitle FontFamily="Arial" FontSize="12" Content="Amplitude|y|"/>
+            <d3:VerticalAxisTitle FontFamily="Arial" FontSize="12" Content="Amplitude |y|"/>
             <d3:HorizontalAxisTitle FontFamily="Arial" FontSize="12" Content="Buffer Contents"/>
         </d3:ChartPlotter>
         <d3:ChartPlotter Name="chart2" Margin="12,12,12,12" Grid.Row="1" Grid.ColumnSpan="3">
@@ -41,36 +39,11 @@
             <d3:HorizontalAxisTitle FontFamily="Arial" FontSize="12" Content="Frequency Bin (10.75hz width)"/>
         </d3:ChartPlotter>
         <Canvas Grid.Column="3" Grid.ColumnSpan="2" Grid.Row="0" Name="_barcanvas" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Width="Auto" Height="Auto"/>
-        <!--<d3:ChartPlotter Name="chart3" Margin="12,12,12,12" Grid.Row="0" Grid.Column="3" Grid.ColumnSpan="2">
-            <d3:HorizontalAxis>
-                <d3:HorizontalIntegerAxis Name="channelAxis"/>
-            </d3:HorizontalAxis>
-            <d3:Header FontFamily="Arial" Content="DetectedMotion"/>
-            <d3:VerticalAxisTitle FontFamily="Arial" FontSize="12" Content="Magnitude"/>
-            <d3:HorizontalAxisTitle FontFamily="Arial" FontSize="12" Content="Channel"/>
-        </d3:ChartPlotter>-->
         <Button Content="Generate Sound" Height="28" HorizontalAlignment="Stretch" Name="button1" VerticalAlignment="Stretch"
                  Click="button1_Click" Grid.Row="2" Grid.Column="1"/>
-        
-        <Button Content="Record" Height="28" HorizontalAlignment="Stretch" Name="button2" VerticalAlignment="Stretch"
-                 Click="record_Click" Grid.Row="2" Grid.Column="3"/>
-        <ComboBox Name="gestureSelector" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Row="2" Grid.Column="4">
-            <ComboBoxItem Content="0 Nothing"/>
-            <ComboBoxItem Content="1 Moving Closer"/>
-            <ComboBoxItem Content="2 Moving Further"/>
-            <ComboBoxItem Content="3 Left to Right"/>
-            <ComboBoxItem Content="5 Right to Left"/>
-        </ComboBox>
-        <ComboBox Name="channelSelector" IsEditable="True" IsReadOnly="True" Text="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.Row="2" Grid.Column="0" SelectionChanged="channelSelector_SelectionChanged">
+        <ComboBox Name="channelSelector" IsEditable="True" IsReadOnly="True" Text="1" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="2" Grid.Column="2" SelectionChanged="channelSelector_SelectionChanged">
             <ComboBoxItem Content="1"/>
             <ComboBoxItem Content="2"/>
-            <ComboBoxItem Content="3"/>
-            <ComboBoxItem Content="4"/>
-            <ComboBoxItem Content="5"/>
-            <ComboBoxItem Content="6"/>
-            <ComboBoxItem Content="7"/>
-            <ComboBoxItem Content="8"/>
         </ComboBox>
-        <TextBlock Grid.Column="2" Grid.Row="2" Height="23" FontSize="14" HorizontalAlignment="Center" Name="gestureDetected" Text="Gesture" VerticalAlignment="Center" />
     </Grid>
-    </Window>
+</Window>
