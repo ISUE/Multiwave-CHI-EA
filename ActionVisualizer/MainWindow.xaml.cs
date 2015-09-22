@@ -491,27 +491,48 @@ namespace ActionVisualizer
                     if (selectedChannels == 2)
                     {
                         float[] speakers = { (float)KF[0].speakerTheta, (float)KF[1].speakerTheta };
+			//temp stores the string identifier of the gesture
                         string temp = WekaHelper.Classify(false, pointHist.Count() * waveIn.BufferMilliseconds,
                             true, new List<float>(speakers), pointHist, S, history, inverse_history);
+
+			//switch statement to rename up/down gestures to forward/back when displaying in the application
                         switch(temp)
                         {
-                            case "swipe_up":
-                                gestureDetected.Text = "swipe_forward";
+                            case "swipe_up":	
+				temp = "swipe_forward";
                                 break;
                             case "swipe_down":
-                                gestureDetected.Text = "swipe_back";
+                                temp = "swipe_back";
                                 break;
                             case "tap_up":
-                                gestureDetected.Text = "tap_forward";
+                                temp = "tap_forward";
                                 break;
                             case "tap_down":
-                                gestureDetected.Text = "tap_back";
-                                break;                            
-                            default:
-                                gestureDetected.Text = temp;
-                                break;
+                                temp = "tap_back";
+                                break;                                           
                         }                        
-
+               		gestureDetected.Text = temp;	
+			
+			//TODO Put interaction with other applications in this switch statement (I know it is inefficient, but 
+			switch(temp)
+                        {
+                            case "swipe_forward":  				                              
+                                break;
+                            case "swipe_back":
+                                break;
+                            case "swipe_left":                                
+                                break;
+                            case "swipe_right":
+                                break;
+                            case "tap_forward":
+                                break;
+                            case "tap_back":
+                                break;                            
+                            case "tap_left":
+                                break;
+                            case "tap_right":
+                                break;        
+                        }     
                     }
 
                     //All the parameters to be passed to ComplexGesture are passed here.
