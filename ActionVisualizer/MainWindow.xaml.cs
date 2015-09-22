@@ -10,6 +10,10 @@ using Exocortex.DSP;
 using NAudio.Dsp;
 using NAudio.Wave;
 using VerySimpleKalman;
+using System.Runtime.InteropServices;
+using WindowsInput;
+using WindowsInput.Native;
+
 
 
 
@@ -64,6 +68,8 @@ namespace ActionVisualizer
         int motion_free = 0;        
         int ignoreFrames = 0;
 
+        InputSimulator sim = new InputSimulator();
+
         public MainWindow()
         {
             InitializeComponent();
@@ -97,7 +103,7 @@ namespace ActionVisualizer
             history = new List<List<int>>();
             inverse_history = new List<List<int>>();
             pointHist = new PointCollection();
-   
+
             bin = new int[buffersize * 2];
             sampledata = new float[buffersize * 2];
             priori = new double[buffersize * 2];
@@ -119,7 +125,7 @@ namespace ActionVisualizer
 
             displacement = new int[1];
             displacement[0] = 0;
-     
+
             for (int i = 0; i < buffersize * 2; i++)
             {
                 bin[i] = i;
@@ -136,7 +142,7 @@ namespace ActionVisualizer
             inverse_history.Add(new List<int> { 0 });
 
             WekaHelper.initialize();
-        }
+        } 
 
         void waveIn_DataAvailable(object sender, WaveInEventArgs e)
         {
@@ -454,13 +460,12 @@ namespace ActionVisualizer
             StartStopSineWave();
         }
 
-
         public void gestureCompleted()
         {
             int motion_threshold = 3; //originally 5         
             int ignore_threshold = 20;
-             
-            if( ignoreFrames <= ignore_threshold)                          
+
+            if (ignoreFrames <= ignore_threshold)
             {
                 motion_free = 0;
                 readyforgesture = false;
@@ -478,7 +483,7 @@ namespace ActionVisualizer
             {
 
                 pointHist = new PointCollection(pointHist.Reverse().Skip(motion_threshold).Reverse());
-                S = new StylusPointCollection(S.Reverse().Skip(motion_threshold).Reverse());               
+                S = new StylusPointCollection(S.Reverse().Skip(motion_threshold).Reverse());
                 for (int i = 0; i < history.Count; i++)
                 {
                     history[i] = new List<int>(history[i].Reverse<int>().Skip(motion_threshold).Reverse<int>());
@@ -491,15 +496,15 @@ namespace ActionVisualizer
                     if (selectedChannels == 2)
                     {
                         float[] speakers = { (float)KF[0].speakerTheta, (float)KF[1].speakerTheta };
-			//temp stores the string identifier of the gesture
+                        //temp stores the string identifier of the gesture
                         string temp = WekaHelper.Classify(false, pointHist.Count() * waveIn.BufferMilliseconds,
                             true, new List<float>(speakers), pointHist, S, history, inverse_history);
 
-			//switch statement to rename up/down gestures to forward/back when displaying in the application
-                        switch(temp)
+                        //switch statement to rename up/down gestures to forward/back when displaying in the application
+                        switch (temp)
                         {
-                            case "swipe_up":	
-				temp = "swipe_forward";
+                            case "swipe_up":
+                                temp = "swipe_forward";
                                 break;
                             case "swipe_down":
                                 temp = "swipe_back";
@@ -509,30 +514,44 @@ namespace ActionVisualizer
                                 break;
                             case "tap_down":
                                 temp = "tap_back";
-                                break;                                           
-                        }                        
-               		gestureDetected.Text = temp;	
-			
-			//TODO Put interaction with other applications in this switch statement (I know it is inefficient, but 
-			switch(temp)
+                                break;
+                        }
+                        gestureDetected.Text = temp;
+
+                        //TODO Put interaction with other applications in this switch statement (I know it is inefficient, but 
+
+                        switch (temp)
                         {
-                            case "swipe_forward":  				                              
+                            case "swipe_forward":
+                                sim.Keyboard.KeyDown(VirtualKeyCode.LWIN);
+                                sim.Keyboard.KeyPress(VirtualKeyCode.TAB);
+                                sim.Keyboard.KeyUp(VirtualKeyCode.LWIN);
                                 break;
                             case "swipe_back":
                                 break;
-                            case "swipe_left":                                
+                            case "swipe_left":
+                                sim.Keyboard.KeyDown(VirtualKeyCode.LWIN);
+                                sim.Keyboard.KeyDown(VirtualKeyCode.LCONTROL);
+                                sim.Keyboard.KeyPress(VirtualKeyCode.LEFT);
+                                sim.Keyboard.KeyUp(VirtualKeyCode.LWIN);
+                                sim.Keyboard.KeyUp(VirtualKeyCode.LCONTROL);
                                 break;
                             case "swipe_right":
+                                sim.Keyboard.KeyDown(VirtualKeyCode.LWIN);
+                                sim.Keyboard.KeyDown(VirtualKeyCode.LCONTROL);
+                                sim.Keyboard.KeyPress(VirtualKeyCode.RIGHT);
+                                sim.Keyboard.KeyUp(VirtualKeyCode.LWIN);
+                                sim.Keyboard.KeyUp(VirtualKeyCode.LCONTROL);
                                 break;
                             case "tap_forward":
                                 break;
                             case "tap_back":
-                                break;                            
+                                break;
                             case "tap_left":
                                 break;
                             case "tap_right":
-                                break;        
-                        }     
+                                break;
+                        } 
                     }
 
                     //All the parameters to be passed to ComplexGesture are passed here.
@@ -540,10 +559,10 @@ namespace ActionVisualizer
                     double deltaY = S.Last().Y - S.First().Y;
 
                     double magnitude = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
-                    double angle = Math.Atan2(deltaY,deltaX);
+                    double angle = Math.Atan2(deltaY, deltaX);
 
                     double duration = pointHist.Count() * waveIn.BufferMilliseconds;
-                 
+
                 }
                 //Clear the buffers
                 foreach (List<int> sublist in history)
