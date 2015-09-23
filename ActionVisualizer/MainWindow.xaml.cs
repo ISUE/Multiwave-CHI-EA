@@ -490,7 +490,7 @@ namespace ActionVisualizer
                     inverse_history[i] = new List<int>(inverse_history[i].Reverse<int>().Skip(motion_threshold).Reverse<int>());
                 }
 
-                if (detectMode.IsChecked.Value && pointHist.Count > 2)
+                if (detectMode.IsChecked.Value && pointHist.Count > 7)
                 {
                     //Call function to find features and test with weka machine
                     if (selectedChannels == 2)
@@ -554,15 +554,8 @@ namespace ActionVisualizer
                         } 
                     }
 
-                    //All the parameters to be passed to ComplexGesture are passed here.
-                    double deltaX = S.Last().X - S.First().X;
-                    double deltaY = S.Last().Y - S.First().Y;
 
-                    double magnitude = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
-                    double angle = Math.Atan2(deltaY, deltaX);
-
-                    double duration = pointHist.Count() * waveIn.BufferMilliseconds;
-
+                    ignoreFrames = 0;
                 }
                 //Clear the buffers
                 foreach (List<int> sublist in history)
