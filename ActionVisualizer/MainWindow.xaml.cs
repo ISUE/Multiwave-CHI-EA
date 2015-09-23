@@ -460,10 +460,14 @@ namespace ActionVisualizer
             StartStopSineWave();
         }
 
+        bool chrome;
+
         public void gestureCompleted()
         {
             int motion_threshold = 3; //originally 5         
-            int ignore_threshold = 20;
+            int ignore_threshold = 10;
+
+            // Im commenting on this thing
 
             if (ignoreFrames <= ignore_threshold)
             {
@@ -490,7 +494,7 @@ namespace ActionVisualizer
                     inverse_history[i] = new List<int>(inverse_history[i].Reverse<int>().Skip(motion_threshold).Reverse<int>());
                 }
 
-                if (detectMode.IsChecked.Value && pointHist.Count > 7)
+                if (detectMode.IsChecked.Value && pointHist.Count > 9)
                 {
                     //Call function to find features and test with weka machine
                     if (selectedChannels == 2)
@@ -515,6 +519,7 @@ namespace ActionVisualizer
                             case "tap_down":
                                 temp = "tap_back";
                                 break;
+                            
                         }
                         gestureDetected.Text = temp;
 
@@ -530,22 +535,42 @@ namespace ActionVisualizer
                             case "swipe_back":
                                 break;
                             case "swipe_left":
-                                sim.Keyboard.KeyDown(VirtualKeyCode.LWIN);
-                                sim.Keyboard.KeyDown(VirtualKeyCode.LCONTROL);
-                                sim.Keyboard.KeyPress(VirtualKeyCode.LEFT);
-                                sim.Keyboard.KeyUp(VirtualKeyCode.LWIN);
-                                sim.Keyboard.KeyUp(VirtualKeyCode.LCONTROL);
+                                if (!chrome)
+                                {
+                                    sim.Keyboard.KeyDown(VirtualKeyCode.LWIN);
+                                    sim.Keyboard.KeyDown(VirtualKeyCode.LCONTROL);
+                                    sim.Keyboard.KeyPress(VirtualKeyCode.LEFT);
+                                    sim.Keyboard.KeyUp(VirtualKeyCode.LWIN);
+                                    sim.Keyboard.KeyUp(VirtualKeyCode.LCONTROL);
+                                } else
+                                {
+                                    sim.Keyboard.KeyDown(VirtualKeyCode.LCONTROL);
+                                    sim.Keyboard.KeyDown(VirtualKeyCode.LSHIFT);
+                                    sim.Keyboard.KeyPress(VirtualKeyCode.TAB);
+                                    sim.Keyboard.KeyUp(VirtualKeyCode.LSHIFT);
+                                    sim.Keyboard.KeyUp(VirtualKeyCode.LCONTROL);
+                                }
                                 break;
                             case "swipe_right":
-                                sim.Keyboard.KeyDown(VirtualKeyCode.LWIN);
-                                sim.Keyboard.KeyDown(VirtualKeyCode.LCONTROL);
-                                sim.Keyboard.KeyPress(VirtualKeyCode.RIGHT);
-                                sim.Keyboard.KeyUp(VirtualKeyCode.LWIN);
-                                sim.Keyboard.KeyUp(VirtualKeyCode.LCONTROL);
+                                if (!chrome)
+                                {
+                                    sim.Keyboard.KeyDown(VirtualKeyCode.LWIN);
+                                    sim.Keyboard.KeyDown(VirtualKeyCode.LCONTROL);
+                                    sim.Keyboard.KeyPress(VirtualKeyCode.RIGHT);
+                                    sim.Keyboard.KeyUp(VirtualKeyCode.LWIN);
+                                    sim.Keyboard.KeyUp(VirtualKeyCode.LCONTROL);
+                                } else
+                                {
+                                    sim.Keyboard.KeyDown(VirtualKeyCode.LCONTROL);
+                                    sim.Keyboard.KeyPress(VirtualKeyCode.TAB);
+                                    sim.Keyboard.KeyUp(VirtualKeyCode.LCONTROL);
+                                }
                                 break;
                             case "tap_forward":
+                                chrome = true;
                                 break;
                             case "tap_back":
+                                chrome = false;
                                 break;
                             case "tap_left":
                                 break;

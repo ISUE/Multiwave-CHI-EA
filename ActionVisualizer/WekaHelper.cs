@@ -22,7 +22,7 @@ namespace ActionVisualizer
         public static void initialize()
         {
             //read classifier            
-            cls = (Classifier)weka.core.SerializationHelper.read("../../Classifier2D.model");            
+            cls = (Classifier)weka.core.SerializationHelper.read("../../ClassifierNB.model");            
             EC = new ExperimentControl();
             EC.Initialize();
         }
