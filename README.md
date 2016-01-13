@@ -11,7 +11,7 @@ Multiwave depends on the following external libraries:
 Clone the repository and build in Visual Studio 2013 or higher. If WindowsInput is missing, explicitly add it using NuGet.
 
 ## Usage
-The following gestures are supported.
+MultichannelAudio can be used to test if the speakers are correctly detecting the keytones and shifts. ActionVisualizer is used to detect gestures. The following gestures are supported. 2D gestures have some simple shell integration (changing workspaces).
 
 | 1D            | 2D            |
 | ------------- |-------------  |
