@@ -19,3 +19,6 @@ MultichannelAudio can be used to test if the speakers are correctly detecting th
 | Double Tap    | Directional Tap      |
 | Two-Handed push/pull |  |
 | Scoll    |      |
+
+
+Ensure that microphone and speaker volume are both set to 100 initially. Lower volume to reduce sensitivity (for Surface Pro 3, 75 for both speaker and microphone works very well).
