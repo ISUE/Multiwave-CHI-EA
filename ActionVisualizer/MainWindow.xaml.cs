@@ -11,10 +11,10 @@ using NAudio.Dsp;
 using NAudio.Wave;
 using VerySimpleKalman;
 using System.Runtime.InteropServices;
+
+// IF THESE ARE NOT FOUND, MAKE SURE TO ADD NUGET PACKAGE (WindowsInput) from online.
 using WindowsInput;
 using WindowsInput.Native;
-
-
 
 
 namespace ActionVisualizer
@@ -24,14 +24,20 @@ namespace ActionVisualizer
     /// </summary>
     public partial class MainWindow : Window
     {
+        // Audio IO
         private WaveOut waveOut;
         private WaveIn waveIn;
 
+        // Number of output channels
         public int waveOutChannels;
 
+        // Empirically determined minimum frequency for two speaker configurations. 
         public int minFrequency = 18700;
         public int frequencyStep = 500;
+
+        // Length of buffer gives ~24 hz updates.
         public int buffersize = 2048;
+        
         public int[] bin;
         public float[] sampledata;
         public float[] inbetween;
@@ -523,7 +529,7 @@ namespace ActionVisualizer
                         }
                         gestureDetected.Text = temp;
 
-                        //TODO Put interaction with other applications in this switch statement (I know it is inefficient, but 
+                        //TODO Put interaction with other applications in this switch statement (I know it is inefficient, but)
 
                         switch (temp)
                         {
