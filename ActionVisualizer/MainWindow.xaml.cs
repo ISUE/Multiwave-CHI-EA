@@ -38,19 +38,22 @@ namespace ActionVisualizer
         // Length of buffer gives ~24 hz updates.
         public int buffersize = 2048;
         
+        // Variables for handling the input buffer.
         public int[] bin;
         public float[] sampledata;
         public float[] inbetween;
         bool init_inbetween = true;
-        ComplexF[] indata;
+        
 
+        ComplexF[] indata;        
         double[] filteredindata;
         double[] priori;
 
+        // Variables for storing data related to the specific channel information.
         int[] channelLabel;
         int[] velocity;
         int[] displacement;
-
+        
         int[] prev_displacement;
         int[] instant_displacement;
         int[] towards_displacement;
@@ -58,22 +61,27 @@ namespace ActionVisualizer
         double ratio;
         VDKalman filter;
 
+        // More helper variables for declaring 
         int selectedChannels = 1;
         List<int> frequencies;
         List<int> centerbins;
 
+        // KF stores the individual channels, each of which extracts bandwidth shifts. (Essentially, each member is one Soundwave)
         List<KeyFrequency> KF;
-
+        
+        // Variables used for gesture recognition
         List<List<int>> history;
         List<List<int>> inverse_history;
         PointCollection pointHist;
         StylusPointCollection S;
 
+        //Segmentation related variables.
         bool readyforgesture = false;
         bool gesture_started = false;
         int motion_free = 0;        
         int ignoreFrames = 0;
 
+        // For keyboard command emulation.
         InputSimulator sim = new InputSimulator();
 
         public MainWindow()
@@ -83,6 +91,7 @@ namespace ActionVisualizer
 
             this.KeyDown += new KeyEventHandler(MainWindow_KeyDown);
 
+            // Print out all the possible input devices to console. Mostly for debugging.
             int waveInDevices = WaveIn.DeviceCount;
             for (int waveInDevice = 0; waveInDevice < waveInDevices; waveInDevice++)
             {
@@ -91,6 +100,7 @@ namespace ActionVisualizer
                     waveInDevice, deviceInfo.ProductName, deviceInfo.Channels);
             }
 
+            // Instantiate a waveIn device and start recording.
             waveIn = new WaveIn();
             waveIn.BufferMilliseconds = 47 * buffersize / 2048;
             waveIn.DeviceNumber = 0;
@@ -114,6 +124,8 @@ namespace ActionVisualizer
             sampledata = new float[buffersize * 2];
             priori = new double[buffersize * 2];
 
+            
+            //Initializing all the global variables to base values for 1 speaker configuration.
             channelLabel = new int[1];
             channelLabel[0] = 1;
             velocity = new int[1];
@@ -140,13 +152,15 @@ namespace ActionVisualizer
 
             }
 
-
+            // Kalman filter related stuff.
             filter = new VDKalman(2);
             filter.initialize(1, .1, 1, 0);
 
+            // To prevent problems with empty lists, we assume 1 channel to start.
             history.Add(new List<int> { 0 });
             inverse_history.Add(new List<int> { 0 });
 
+            // Load up the classifier model file.
             WekaHelper.initialize();
         } 
 
@@ -154,6 +168,9 @@ namespace ActionVisualizer
         {
             //Console.WriteLine("WaveIn_DataAvailable");
             //Console.WriteLine(e.BytesRecorded); //8288 bytes -> 2072 floats (24 too many)
+            
+            // We have to concatenate consectutive buffers together to ensure that the time domain signal is continuous from the previous iteration.
+            // Here, we grab the length of the inbetween buffer. 
             if (init_inbetween)
             {
                 inbetween = new float[e.BytesRecorded / 4 - buffersize];
@@ -162,7 +179,7 @@ namespace ActionVisualizer
                 init_inbetween = false;
             }
 
-
+            // Here, we grab the byte array provided by the callback, and convert it to a float array.
             for (int index = 0; index < buffersize; index++)
             {
                 int sample = (int)((e.Buffer[index * 4 + 3] << 24) |
@@ -184,6 +201,7 @@ namespace ActionVisualizer
                 return;
             inbetween = new float[e.BytesRecorded / 4 - buffersize];
 
+            // We then fill the inbetween buffer (extra data larger than the original buffer size) with the remainder.
             for (int i = buffersize; i < e.BytesRecorded / 4; i++)
             {
                 int sample = (int)((e.Buffer[i * 4 + 3] << 24) |
@@ -195,13 +213,19 @@ namespace ActionVisualizer
                 inbetween[i - buffersize] = sample32;
             }
 
+            // bufferFFT grabs the sampledata buffer and calculates the Fourier transform, filters the data using a high-pass filter and stores it in filteredindata
             bufferFFT();
+
+            // Updating the Kalman Filter
             filter.time_Update();
+
+            // If the speakers are outputting the key tones.
             if ((waveOut != null))
             {
 
                 KF = new List<KeyFrequency>();
                 //gestureDetected.Text = "";
+                
                 for (int i = 0; i < frequencies.Count; i++)
                 {
                     if (history[i].Count > 0)
@@ -231,13 +255,18 @@ namespace ActionVisualizer
                     inverse_history[i].Add(KF[i].inverse_state);
 
                 }
+
+                // Run through gesture detection.
                 detectGestures();
             }
         }
 
+
         private void detectGestures()
         {
             ignoreFrames++;
+
+            // Simple 1D gesture recognition heuristics.
             if (selectedChannels == 1)
             {
                 foreach (List<int> subList in history)
@@ -264,8 +293,16 @@ namespace ActionVisualizer
                         gestureDetected.Text = "SingleTap ";
                     else if (signChanges >= 3)
                         gestureDetected.Text = "DoubleTap ";
+
+                    // Naive segmentation, not a primary concern.
+                    if (subList.Count > 25 && gestureDetected.Text != "")
+                    {
+                        gestureDetected.Text = "";
+                        subList.Clear();
+                    }
                 }
             }
+            // We generate the combined vector V from each channel and do various segmentation related things here.
             else if (selectedChannels == 2)
             {
                 double tot_X = 0, tot_Y = 0;
@@ -274,10 +311,9 @@ namespace ActionVisualizer
                     tot_X += now.x;
                     tot_Y += now.y;
                 }
-                //gestureDetected.Text += (Math.Round(tot_X,2) + " " + Math.Round(tot_Y,2));
+
                 pointHist.Add(new Point(tot_X, tot_Y));
-                //if (pointHist.Count > 20)
-                //    pointHist.RemoveAt(0);
+
                 if (!gesture_started && tot_X == 0 && tot_Y == 0)
                 {
                     pointHist.Clear();
@@ -294,12 +330,15 @@ namespace ActionVisualizer
                     motion_free = 0;                    
                 }
 
+                // create the stroke representation for recognition.
                 generateStroke(pointHist);
             }           
             
+            // Go check if a gesture was completed.
             gestureCompleted();
         }
 
+        //creates stroke and draws it on the canvas.
         public void generateStroke(PointCollection pointHist)
         {
             S = new StylusPointCollection();
@@ -323,6 +362,8 @@ namespace ActionVisualizer
                 indata[i].Im = 0;
             }
             Exocortex.DSP.Fourier.FFT(indata, buffersize * 2, Exocortex.DSP.FourierDirection.Forward);
+
+            // The factor may need to be tuned (1.8 works on SP3).
             filteredindata = filterMean(indata, 1.8);
         }
 
@@ -386,6 +427,7 @@ namespace ActionVisualizer
             return 20.0f * (float)Math.Log10(Math.Sqrt(y.Re * y.Re + y.Im * y.Im) / .02);
         }
 
+        // Relative high pass filter. 
         public double[] filterMean(ComplexF[] data, double factor)
         {
             double[] outdata = new double[data.Length];
@@ -422,6 +464,7 @@ namespace ActionVisualizer
             return outdata;
         }
 
+        // House keeping for changing number of speakers. Fairly self explanatory.
         private void channelSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (waveOut != null)
@@ -465,16 +508,18 @@ namespace ActionVisualizer
         {
             StartStopSineWave();
         }
-
+        
         bool chrome;
 
         public void gestureCompleted()
         {
+            // Minimum number of frames of no motion to be segmented as a gesture
             int motion_threshold = 3; //originally 5         
+
+            // Minimum length of time after a gesture is completed before another gesture can be started.
             int ignore_threshold = 10;
 
-            // Im commenting on this thing
-
+            // If users are still reseting their hands, ignore all the movements and clear all buffers.
             if (ignoreFrames <= ignore_threshold)
             {
                 motion_free = 0;
@@ -491,7 +536,7 @@ namespace ActionVisualizer
 
             if (gesture_started && ignoreFrames > ignore_threshold && motion_free > motion_threshold && selectedChannels >= 2)
             {
-
+                // Use LINQ to remove all the frames at the end that correspond to the motion free periods.
                 pointHist = new PointCollection(pointHist.Reverse().Skip(motion_threshold).Reverse());
                 S = new StylusPointCollection(S.Reverse().Skip(motion_threshold).Reverse());
                 for (int i = 0; i < history.Count; i++)
@@ -500,6 +545,7 @@ namespace ActionVisualizer
                     inverse_history[i] = new List<int>(inverse_history[i].Reverse<int>().Skip(motion_threshold).Reverse<int>());
                 }
 
+                //If we are in detect mode, pass it to WEKA for classification.
                 if (detectMode.IsChecked.Value && pointHist.Count > 9)
                 {
                     //Call function to find features and test with weka machine
@@ -529,80 +575,85 @@ namespace ActionVisualizer
                         }
                         gestureDetected.Text = temp;
 
-                        //TODO Put interaction with other applications in this switch statement (I know it is inefficient, but)
-
-                        switch (temp)
+                        //TODO Put interaction with other applications in this switch statement 
+                        // Allows for changing between workspaces in windows 10.
+                        if (shellIntegration.IsChecked.Value)
                         {
-                            case "swipe_forward":
-                                sim.Keyboard.KeyDown(VirtualKeyCode.LWIN);
-                                sim.Keyboard.KeyPress(VirtualKeyCode.TAB);
-                                sim.Keyboard.KeyUp(VirtualKeyCode.LWIN);
-                                break;
-                            case "swipe_back":
-                                break;
-                            case "swipe_left":
-                                if (!chrome)
-                                {
+                            switch (temp)
+                            {
+                                case "swipe_forward":
                                     sim.Keyboard.KeyDown(VirtualKeyCode.LWIN);
-                                    sim.Keyboard.KeyDown(VirtualKeyCode.LCONTROL);
-                                    sim.Keyboard.KeyPress(VirtualKeyCode.LEFT);
-                                    sim.Keyboard.KeyUp(VirtualKeyCode.LWIN);
-                                    sim.Keyboard.KeyUp(VirtualKeyCode.LCONTROL);
-                                } else
-                                {
-                                    sim.Keyboard.KeyDown(VirtualKeyCode.LCONTROL);
-                                    sim.Keyboard.KeyDown(VirtualKeyCode.LSHIFT);
                                     sim.Keyboard.KeyPress(VirtualKeyCode.TAB);
-                                    sim.Keyboard.KeyUp(VirtualKeyCode.LSHIFT);
-                                    sim.Keyboard.KeyUp(VirtualKeyCode.LCONTROL);
-                                }
-                                break;
-                            case "swipe_right":
-                                if (!chrome)
-                                {
-                                    sim.Keyboard.KeyDown(VirtualKeyCode.LWIN);
-                                    sim.Keyboard.KeyDown(VirtualKeyCode.LCONTROL);
-                                    sim.Keyboard.KeyPress(VirtualKeyCode.RIGHT);
                                     sim.Keyboard.KeyUp(VirtualKeyCode.LWIN);
-                                    sim.Keyboard.KeyUp(VirtualKeyCode.LCONTROL);
-                                } else
-                                {
-                                    sim.Keyboard.KeyDown(VirtualKeyCode.LCONTROL);
-                                    sim.Keyboard.KeyPress(VirtualKeyCode.TAB);
-                                    sim.Keyboard.KeyUp(VirtualKeyCode.LCONTROL);
-                                }
-                                break;
-                            case "tap_forward":
-                                chrome = true;
-                                break;
-                            case "tap_back":
-                                chrome = false;
-                                break;
-                            case "tap_left":
-                                break;
-                            case "tap_right":
-                                break;
-                        } 
+                                    break;
+                                case "swipe_back":
+                                    break;
+                                case "swipe_left":
+                                    if (!chrome)
+                                    {
+                                        sim.Keyboard.KeyDown(VirtualKeyCode.LWIN);
+                                        sim.Keyboard.KeyDown(VirtualKeyCode.LCONTROL);
+                                        sim.Keyboard.KeyPress(VirtualKeyCode.LEFT);
+                                        sim.Keyboard.KeyUp(VirtualKeyCode.LWIN);
+                                        sim.Keyboard.KeyUp(VirtualKeyCode.LCONTROL);
+                                    }
+                                    else
+                                    {
+                                        sim.Keyboard.KeyDown(VirtualKeyCode.LCONTROL);
+                                        sim.Keyboard.KeyDown(VirtualKeyCode.LSHIFT);
+                                        sim.Keyboard.KeyPress(VirtualKeyCode.TAB);
+                                        sim.Keyboard.KeyUp(VirtualKeyCode.LSHIFT);
+                                        sim.Keyboard.KeyUp(VirtualKeyCode.LCONTROL);
+                                    }
+                                    break;
+                                case "swipe_right":
+                                    if (!chrome)
+                                    {
+                                        sim.Keyboard.KeyDown(VirtualKeyCode.LWIN);
+                                        sim.Keyboard.KeyDown(VirtualKeyCode.LCONTROL);
+                                        sim.Keyboard.KeyPress(VirtualKeyCode.RIGHT);
+                                        sim.Keyboard.KeyUp(VirtualKeyCode.LWIN);
+                                        sim.Keyboard.KeyUp(VirtualKeyCode.LCONTROL);
+                                    }
+                                    else
+                                    {
+                                        sim.Keyboard.KeyDown(VirtualKeyCode.LCONTROL);
+                                        sim.Keyboard.KeyPress(VirtualKeyCode.TAB);
+                                        sim.Keyboard.KeyUp(VirtualKeyCode.LCONTROL);
+                                    }
+                                    break;
+                                case "tap_forward":
+                                    chrome = true;
+                                    break;
+                                case "tap_back":
+                                    chrome = false;
+                                    break;
+                                case "tap_left":
+                                    break;
+                                case "tap_right":
+                                    break;
+                            }
+                        }
                     }
 
 
                     ignoreFrames = 0;
                 }
-                //Clear the buffers
+                // Clear the buffers
                 foreach (List<int> sublist in history)
                     sublist.Clear();
                 foreach (List<int> sublist in inverse_history)
                     sublist.Clear();
                 pointHist.Clear();
 
-                //prepare for next gesture (might need a button press)
+                // Prepare for next gesture (might need a button press)
                 readyforgesture = false;
                 colorBox.Background = new SolidColorBrush(Colors.Red);
                 gesture_started = false;
                 motion_free = 0;
             }
         }    
-
+        
         void MainWindow_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.A)

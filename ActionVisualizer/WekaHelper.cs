@@ -15,6 +15,7 @@ namespace ActionVisualizer
 {
     class WekaHelper
     {
+        // GS is the sample to be classified, cls stores the random forest classifier, EC is a wrapper.
         static GestureSample GS;
         static Classifier cls;        
         static ExperimentControl EC;
@@ -29,6 +30,7 @@ namespace ActionVisualizer
 
         public static string Classify(bool useRubine, float duration, bool righthandedness, List<float> SpeakerAngles, PointCollection pointHist, StylusPointCollection S, List<List<int>> hist, List<List<int>> ihist)
         {
+            // Convert all parameters to format used in GestureTests
             List<Vector2> InterpretedPoints = new List<Vector2>();
             List<Vector2> StylusPoints = new List<Vector2>();
             List<Vector2> VelocityHistory = new List<Vector2>();
@@ -42,6 +44,8 @@ namespace ActionVisualizer
                 VelocityHistory.Add(new Vector2(hist[0][i], hist[1][i]));
                 InverseVelocityHistory.Add(new Vector2(ihist[0][i], ihist[1][i]));
             }
+
+            // Create a new Sample, compute the features, and classify
             GS = new GestureSample(GestureTests.Types.GestureType.unknown, righthandedness,duration,SpeakerAngles,InterpretedPoints,StylusPoints,VelocityHistory,InverseVelocityHistory);
             GS.ComputeFeatures(GestureFeatures.PointsStroke);
 
@@ -55,15 +59,17 @@ namespace ActionVisualizer
             double clsLabel = cls.classifyInstance(test.instance(0));
             test.instance(0).setClassValue(clsLabel);            
 
+            // Return the appropriate label
             return ((GestureType2D)((int)clsLabel+1)).ToString();
         }
 
+        // Writes the gesture to be classfied to a file to be parsed by weka. Probably should be written to a string instead.
         private static void WriteARFF()
         {
-            //create file
+            // create file
             StreamWriter file = File.CreateText("outfile.arff");
 
-            //write arff header
+            // write arff header
             file.Write("@RELATION " + "TestSample" + "\r\r");
 
             //file.Write("@ATTRIBUTE username STRING\r");
