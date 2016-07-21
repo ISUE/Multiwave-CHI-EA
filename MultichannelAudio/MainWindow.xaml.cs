@@ -16,8 +16,9 @@ namespace MultichannelAudio
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
-    {        
-        private WaveOut waveOut;
+    {
+        private WasapiOut wOut;
+        //private WaveOut waveOut;
         private WaveIn waveIn;
 
         public int waveOutChannels;        
@@ -167,7 +168,7 @@ namespace MultichannelAudio
                 chart2.AddLineGraph(comp2, Colors.Red);
             }
 
-            if ((waveOut != null) )
+            if (wOut != null)
             {         
                 
                 KF = new List<KeyFrequency>();                
@@ -203,7 +204,7 @@ namespace MultichannelAudio
 
         private void StartStopSineWave()
         {
-            if (waveOut == null)
+            if (wOut == null)
             {
                 button1.Content = "Stop Sound";
                 //string str = channelSelector.Text;
@@ -211,7 +212,8 @@ namespace MultichannelAudio
                 Console.WriteLine("User Selected Channels: " + selectedChannels);
                 WaveOutCapabilities outdeviceInfo = WaveOut.GetCapabilities(0);                
                 waveOutChannels = outdeviceInfo.Channels;
-                waveOut = new WaveOut();
+                //waveOut = new WaveOut();
+
                 int waveOutDevices = WaveOut.DeviceCount;
                 for(int i = 0; i< waveOutDevices; i++)
                 {
@@ -220,6 +222,7 @@ namespace MultichannelAudio
                             i, outdeviceInfo.ProductName, outdeviceInfo.Channels);
                 }
 
+                wOut = new WasapiOut(NAudio.CoreAudioApi.AudioClientShareMode.Shared, 10);
 
                 List<IWaveProvider> inputs = new List<IWaveProvider>();
                 frequencies = new List<int>();
@@ -237,8 +240,8 @@ namespace MultichannelAudio
                 var splitter = new MultiplexingWaveProvider(inputs, selectedChannels);
                 try
                 {
-                    waveOut.Init(splitter);
-                    waveOut.Play();
+                    wOut.Init(splitter);
+                    wOut.Play();
                 }
                 catch(System.ArgumentException)
                 {
@@ -247,9 +250,9 @@ namespace MultichannelAudio
             }
             else
             {
-                waveOut.Stop();
-                waveOut.Dispose();
-                waveOut = null;
+                wOut.Stop();
+                wOut.Dispose();
+                wOut = null;
                 button1.Content = "Generate Sound";
 
                 frequencies.Clear();
