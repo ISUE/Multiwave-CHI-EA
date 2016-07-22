@@ -25,8 +25,8 @@ namespace ActionVisualizer
     public partial class MainWindow : Window
     {
         // Audio IO
-        private WasapiOut wOut;
-        //private WaveOut waveOut;
+        //private WasapiOut wOut;
+        private WaveOut waveOut;
         private WaveIn waveIn;
 
         // Number of output channels
@@ -221,7 +221,7 @@ namespace ActionVisualizer
             filter.time_Update();
 
             // If the speakers are outputting the key tones.
-            if ((wOut != null))
+            if ((waveOut != null))
             {
 
                 KF = new List<KeyFrequency>();
@@ -370,13 +370,13 @@ namespace ActionVisualizer
 
         private void StartStopSineWave()
         {
-            if (wOut == null)
+            if (waveOut == null)
             {
                 button1.Content = "Stop Sound";
                 Console.WriteLine("User Selected Channels: " + selectedChannels);
                 WaveOutCapabilities outdeviceInfo = WaveOut.GetCapabilities(0);
                 waveOutChannels = outdeviceInfo.Channels;
-                wOut = new WasapiOut(NAudio.CoreAudioApi.AudioClientShareMode.Shared, 10);
+                waveOut = new WaveOut();
                               
                 int waveOutDevices = WaveOut.DeviceCount;
                 for (int i = 0; i < waveOutDevices; i++)
@@ -401,8 +401,8 @@ namespace ActionVisualizer
                 var splitter = new MultiplexingWaveProvider(inputs, selectedChannels);
                 try
                 {
-                    wOut.Init(splitter);
-                    wOut.Play();
+                    waveOut.Init(splitter);
+                    waveOut.Play();
                 }
                 catch (System.ArgumentException)
                 {
@@ -410,13 +410,13 @@ namespace ActionVisualizer
                 }
 
                 //Console.WriteLine("Number of Channels: " + wOut.NumberOfBuffers);               
-                Console.WriteLine("Number of Channels: " + wOut.OutputWaveFormat.Channels);
+                Console.WriteLine("Number of Channels: " + waveOut.OutputWaveFormat.Channels);
             }
             else
             {
-                wOut.Stop();
-                wOut.Dispose();
-                wOut = null;
+                waveOut.Stop();
+                waveOut.Dispose();
+                waveOut = null;
                 button1.Content = "Start Sound";
 
                 frequencies.Clear();
@@ -469,7 +469,7 @@ namespace ActionVisualizer
         // House keeping for changing number of speakers. Fairly self explanatory.
         private void channelSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (wOut != null)
+            if (waveOut != null)
                 StartStopSineWave();
 
             selectedChannels = (sender as ComboBox).SelectedIndex + 1;

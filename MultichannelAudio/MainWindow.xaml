@@ -44,8 +44,6 @@
         <ComboBox Name="channelSelector" IsEditable="True" IsReadOnly="True" Text="1" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="2" Grid.Column="2" SelectionChanged="channelSelector_SelectionChanged">
             <ComboBoxItem Content="1"/>
             <ComboBoxItem Content="2"/>
-            <ComboBoxItem Content="4"/>
-            <ComboBoxItem Content="5"/>
         </ComboBox>
     </Grid>
 </Window>
